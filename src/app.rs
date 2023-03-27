@@ -4,30 +4,32 @@ use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
 pub struct App {
-    path: PathBuf,
+    path: String,
 }
 
 impl App {
     pub fn new() -> Self {
-        let temp_path = if cfg!(windows) {
-            env::var("TEMP").unwrap()
-        } else {
-            env::var("TMPDIR").unwrap()
+        let key = if cfg!(windows) { "TEMP" } else { "TEMPDIR" };
+        let temp_path = match env::var(key) {
+            Ok(value) => value,
+            Err(_) => {
+                eprintln!("Error: Failed to access the tempdir!");
+                std::process::exit(1);
+            }
         };
 
         let mut path = PathBuf::from(temp_path);
         path.push(".hitlist");
+
+        let path = format!("{}", path.display());
         Self { path }
     }
 
     pub fn mark(&self) {
-        let filepath =
-            self.path.to_str().expect("Error: filepath doesn't exists!");
-
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
-            .open(filepath)
+            .open(self.path.as_str())
             .expect("Unable to open file");
 
         let data = std::env::current_dir()
@@ -37,12 +39,9 @@ impl App {
     }
 
     pub fn unmark(&self, index: usize) {
-        let filepath =
-            self.path.to_str().expect("Error: filepath doesn't exists!");
-
         let mut lines = Vec::new();
         {
-            let file = match File::open(filepath) {
+            let file = match File::open(self.path.as_str()) {
                 Ok(file) => file,
                 Err(_) => {
                     eprintln!("List is empty!");
@@ -69,7 +68,7 @@ impl App {
 
         lines.reverse();
 
-        let file = File::create(filepath)
+        let file = File::create(self.path.as_str())
             .expect("Error: Failed to open the file in create mode!");
 
         let mut writer = BufWriter::new(file);
@@ -87,10 +86,7 @@ impl App {
     }
 
     pub fn check(&self) {
-        let filepath =
-            self.path.to_str().expect("Error: filepath doesn't exists!");
-
-        let file = match File::open(filepath) {
+        let file = match File::open(self.path.as_str()) {
             Ok(file) => file,
             Err(_) => {
                 eprintln!("The hitlist is empty!");
@@ -133,17 +129,12 @@ impl App {
     }
 
     pub fn clear(&self) {
-        let filepath =
-            self.path.to_str().expect("Error: Filepath doesn't exists!");
-
-        File::create(filepath).expect("Error: Failed to clear the file!");
+        File::create(self.path.as_str())
+            .expect("Error: Failed to clear the file!");
     }
 
     pub fn list(&self) {
-        let filepath =
-            self.path.to_str().expect("Error: Filepath doesn't exists!");
-
-        let file = match File::open(filepath) {
+        let file = match File::open(self.path.as_str()) {
             Ok(file) => file,
             Err(_) => {
                 eprintln!("Nothing to show!");
