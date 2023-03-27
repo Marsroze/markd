@@ -1,0 +1,15 @@
+[package]
+name = "markd"
+version = "0.1.0"
+authors = ["Marsroze"]
+edition = "2021"
+description = "A Directory Marker"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "mkd"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.1.10", features = ["derive"] }
