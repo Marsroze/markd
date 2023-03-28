@@ -31,7 +31,7 @@ Options:
 ## How to uninstall
 
 ```sh
-cargo uninstall
+cargo uninstall markd
 ```
 
 ## License

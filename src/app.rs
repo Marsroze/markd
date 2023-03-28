@@ -41,13 +41,17 @@ impl App {
     pub fn unmark(&self, index: usize) {
         let mut lines = Vec::new();
         {
-            let file = match File::open(self.path.as_str()) {
-                Ok(file) => file,
-                Err(_) => {
-                    eprintln!("List is empty!");
-                    std::process::exit(1);
-                }
-            };
+            let file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .read(true)
+                .open(self.path.as_str())
+                .expect("Error: Failed to open the file!");
+
+            if file.metadata().unwrap().len() == 0 {
+                eprintln!("List is empty!");
+                std::process::exit(1);
+            }
 
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
@@ -86,24 +90,23 @@ impl App {
     }
 
     pub fn check(&self) {
-        let file = match File::open(self.path.as_str()) {
-            Ok(file) => file,
-            Err(_) => {
-                eprintln!("The hitlist is empty!");
-                std::process::exit(1);
-            }
-        };
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .read(true)
+            .open(self.path.as_str())
+            .expect("Error: Failed to open the file!");
+
+        if file.metadata().unwrap().len() == 0 {
+            eprintln!("List is empty!");
+            std::process::exit(1);
+        }
 
         let mut buf_reader = BufReader::new(file);
         let mut contents = String::new();
         buf_reader
             .read_to_string(&mut contents)
             .expect("Error: Failed to read the contents of the file!");
-
-        if contents.is_empty() {
-            eprintln!("The hitlist is empty!");
-            std::process::exit(1);
-        }
 
         let mut paths = Vec::new();
         for line in contents.lines() {
