@@ -1,10 +1,12 @@
-use std::env;
+use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 pub struct App {
     path: String,
+    dirs: VecDeque<String>,
 }
 
 impl App {
@@ -22,63 +24,63 @@ impl App {
         path.push(".hitlist");
 
         let path = format!("{}", path.display());
-        Self { path }
+
+        let file = OpenOptions::new()
+            .write(true)
+            .read(true)
+            .create(true)
+            .open(&path)
+            .expect("Error: Failed to open the file!");
+
+        let mut reader = BufReader::new(file);
+
+        let mut contents = String::new();
+
+        reader
+            .read_to_string(&mut contents)
+            .expect("Error: Failed to read to string!");
+
+        let dirs = contents
+            .lines()
+            .map(|line| format!("{}\n", line))
+            .collect::<VecDeque<String>>();
+
+        Self { path, dirs }
     }
 
     pub fn mark(&self) {
-        let mut file = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(self.path.as_str())
-            .expect("Unable to open file");
-
-        let data = std::env::current_dir()
+        let current = std::env::current_dir()
             .expect("Error: Failed to get path of the current directory!");
-        let path = format!("{}\n", data.display());
-        file.write(path.as_bytes()).unwrap();
+
+        let data = format!("{}\n", current.display());
+
+        if self.dirs.contains(&data) {
+            std::process::exit(1);
+        }
+
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.path)
+            .expect("Error: Failed to open the file in append mode!");
+
+        file.write(data.as_bytes()).unwrap();
     }
 
     pub fn unmark(&self, index: usize) {
-        let mut lines = Vec::new();
-        {
-            let file = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .read(true)
-                .open(self.path.as_str())
-                .expect("Error: Failed to open the file!");
-
-            if file.metadata().unwrap().len() == 0 {
-                eprintln!("List is empty!");
-                std::process::exit(1);
-            }
-
-            let mut buf_reader = BufReader::new(file);
-            let mut contents = String::new();
-            buf_reader
-                .read_to_string(&mut contents)
-                .expect("Error: Failed to read the contents of the file!");
-
-            for line in contents.lines() {
-                let data = format!("{}\n", line);
-                lines.push(data);
-            }
-        }
-
+        let mut lines = self.dirs.clone();
         if index > lines.len() || index == 0 {
             eprintln!("Not valid index!");
             std::process::exit(1);
         }
 
-        lines.reverse();
-
-        let file = File::create(self.path.as_str())
+        let file = File::create(&self.path)
             .expect("Error: Failed to open the file in create mode!");
 
         let mut writer = BufWriter::new(file);
 
         let mut counter = 0;
-        while let Some(line) = lines.pop() {
+        while let Some(line) = lines.pop_front() {
             counter += 1;
             if index == counter {
                 continue;
@@ -90,68 +92,38 @@ impl App {
     }
 
     pub fn check(&self) {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .read(true)
-            .open(self.path.as_str())
-            .expect("Error: Failed to open the file!");
-
-        if file.metadata().unwrap().len() == 0 {
-            eprintln!("List is empty!");
+        if self.dirs.len() == 0 {
+            eprintln!("Nothing to check!");
             std::process::exit(1);
         }
 
-        let mut buf_reader = BufReader::new(file);
-        let mut contents = String::new();
-        buf_reader
-            .read_to_string(&mut contents)
-            .expect("Error: Failed to read the contents of the file!");
-
-        let mut paths = Vec::new();
-        for line in contents.lines() {
-            let path = Path::new(line);
-            paths.push(path);
-        }
+        let mut paths: VecDeque<&Path> = self
+            .dirs
+            .iter()
+            .map(|line| Path::new(line.trim()))
+            .collect();
 
         let handle = io::stdout().lock();
         let mut writer = BufWriter::new(handle);
 
-        paths.reverse();
-
-        while let Some(path) = paths.pop() {
+        while let Some(path) = paths.pop_front() {
             let data = if path.exists() {
                 format!("[✓] {}\n", path.display())
             } else {
                 format!("[✘] {}\n", path.display())
             };
             writer
-                .write(data.as_bytes())
+                .write_all(data.as_bytes())
                 .expect("Error: Failed to write the contents of the file!");
         }
     }
 
     pub fn clear(&self) {
-        File::create(self.path.as_str())
-            .expect("Error: Failed to clear the file!");
+        fs::remove_file(&self.path).expect("Error: Failed to clear the file!");
     }
 
     pub fn list(&self) {
-        let file = match File::open(self.path.as_str()) {
-            Ok(file) => file,
-            Err(_) => {
-                eprintln!("Nothing to show!");
-                std::process::exit(1);
-            }
-        };
-
-        let mut buf_reader = BufReader::new(file);
-        let mut contents = String::new();
-        buf_reader
-            .read_to_string(&mut contents)
-            .expect("Error: Failed to read the contents of the file!");
-
-        if contents.is_empty() {
+        if self.dirs.len() == 0 {
             eprintln!("Nothing to show!");
             std::process::exit(1);
         }
@@ -159,14 +131,11 @@ impl App {
         let handle = io::stdout().lock();
         let mut writer = BufWriter::new(handle);
 
-        let mut index: usize = 1;
-
-        for line in contents.lines() {
-            let data = format!("[{}] {}\n", index, line);
+        for (index, line) in self.dirs.iter().enumerate() {
+            let data = format!("[{}] {}", index + 1, line);
             writer
                 .write(data.as_bytes())
                 .expect("Error: Failed to print contents!");
-            index += 1;
         }
     }
 }
