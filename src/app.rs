@@ -64,7 +64,8 @@ impl App {
             .open(&self.path)
             .expect("Error: Failed to open the file in append mode!");
 
-        file.write(data.as_bytes()).unwrap();
+        file.write(data.as_bytes())
+            .expect("Error: Failed to write to the file!");
     }
 
     pub fn unmark(&self, index: usize) {
