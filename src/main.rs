@@ -27,6 +27,9 @@ enum Commands {
 
     /// Display marked directory list
     List,
+
+    /// Restores recently cleared list
+    Restore,
 }
 
 fn main() {
@@ -38,5 +41,6 @@ fn main() {
         Commands::Check => app.check(),
         Commands::Clear => app.clear(),
         Commands::List => app.list(),
+        Commands::Restore => app.restore(),
     }
 }

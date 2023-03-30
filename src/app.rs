@@ -5,8 +5,10 @@ use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 pub struct App {
-    path: String,
     dirs: VecDeque<String>,
+    path: String,
+    backed_up: bool,
+    backup_path: String,
 }
 
 impl App {
@@ -20,10 +22,19 @@ impl App {
             }
         };
 
-        let mut path = PathBuf::from(temp_path);
+        let mut path = PathBuf::from(&temp_path);
         path.push(".hitlist");
-
         let path = format!("{}", path.display());
+
+        let mut backup_path = PathBuf::from(temp_path);
+        backup_path.push(".hitlist.bak");
+
+        let mut backed_up = false;
+        if backup_path.exists() {
+            backed_up = true;
+        }
+
+        let backup_path = format!("{}", backup_path.display());
 
         let file = OpenOptions::new()
             .write(true)
@@ -40,12 +51,14 @@ impl App {
             .read_to_string(&mut contents)
             .expect("Error: Failed to read to string!");
 
-        let dirs = contents
-            .lines()
-            .map(|line| format!("{}\n", line))
-            .collect::<VecDeque<String>>();
+        let dirs = contents.lines().map(|line| format!("{}\n", line)).collect();
 
-        Self { path, dirs }
+        Self {
+            dirs,
+            path,
+            backed_up,
+            backup_path,
+        }
     }
 
     pub fn mark(&self) {
@@ -120,7 +133,12 @@ impl App {
     }
 
     pub fn clear(&self) {
-        fs::remove_file(&self.path).expect("Error: Failed to clear the file!");
+        if self.dirs.len() != 0 {
+            fs::copy(&self.path, &self.backup_path)
+                .expect("Error: Failed to backup the data!");
+            fs::remove_file(&self.path)
+                .expect("Error: Failed to clear the file!");
+        }
     }
 
     pub fn list(&self) {
@@ -137,6 +155,15 @@ impl App {
             writer
                 .write(data.as_bytes())
                 .expect("Error: Failed to print contents!");
+        }
+    }
+
+    pub fn restore(&self) {
+        if self.backed_up {
+            fs::copy(&self.backup_path, &self.path)
+                .expect("Error: Failed to load the backup data!");
+        } else {
+            eprintln!("No backup found!");
         }
     }
 }
