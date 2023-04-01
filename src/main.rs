@@ -33,7 +33,7 @@ enum Commands {
     List,
 
     /// Restores recently cleared list
-    Restore,
+    Reset,
 }
 
 fn main() {
@@ -46,6 +46,6 @@ fn main() {
         Commands::Clear => app.clear(),
         Commands::Clip { index } => app.clip(index.unwrap()),
         Commands::List => app.list(),
-        Commands::Restore => app.restore(),
+        Commands::Reset => app.restore(),
     }
 }
