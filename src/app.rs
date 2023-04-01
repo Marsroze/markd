@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::{env, fs};
 
 use arboard::Clipboard;
+use colored::Colorize;
 
 pub struct App {
     dirs: VecDeque<String>,
@@ -19,7 +20,10 @@ impl App {
         let temp_path = match env::var(key) {
             Ok(value) => value,
             Err(_) => {
-                eprintln!("Error: Failed to access the tempdir!");
+                eprintln!(
+                    "{} Failed to access the tempdir!",
+                    "Error:".bold().red()
+                );
                 std::process::exit(1);
             }
         };
@@ -86,7 +90,7 @@ impl App {
     pub fn unmark(&self, index: usize) {
         let mut lines = self.dirs.clone();
         if index > lines.len() || index == 0 {
-            eprintln!("Not valid index!");
+            eprintln!("{}", "Not valid index!".red());
             std::process::exit(1);
         }
 
@@ -108,7 +112,7 @@ impl App {
 
     pub fn status(&self) {
         if self.dirs.len() == 0 {
-            eprintln!("Nothing to check!");
+            eprintln!("{}", "Nothing to check!".red());
             std::process::exit(1);
         }
 
@@ -123,9 +127,17 @@ impl App {
 
         while let Some(path) = paths.pop_front() {
             let data = if path.exists() {
-                format!("[✓] {}\n", path.display())
+                format!(
+                    "[{}] {}\n",
+                    "✓".green(),
+                    path.display().to_string().bright_yellow().underline()
+                )
             } else {
-                format!("[✘] {}\n", path.display())
+                format!(
+                    "[{}] {}\n",
+                    "✘".red(),
+                    path.display().to_string().red().dimmed().underline()
+                )
             };
             writer
                 .write_all(data.as_bytes())
@@ -144,7 +156,7 @@ impl App {
 
     pub fn clip(&self, index: usize) {
         if index > self.dirs.len() || index == 0 {
-            eprintln!("Not valid index!");
+            eprintln!("{}", "Not valid index!".red());
             std::process::exit(1);
         }
         let mut clipboard =
@@ -157,7 +169,6 @@ impl App {
 
     pub fn list(&self) {
         if self.dirs.len() == 0 {
-            eprintln!("Nothing to show!");
             std::process::exit(1);
         }
 
@@ -165,7 +176,8 @@ impl App {
         let mut writer = BufWriter::new(handle);
 
         for (index, line) in self.dirs.iter().enumerate() {
-            let data = format!("[{}] {}", index + 1, line);
+            let data =
+                format!("[{}] {}", index + 1, line.underline().bright_yellow());
             writer
                 .write(data.as_bytes())
                 .expect("Error: Failed to print contents!");
@@ -177,7 +189,7 @@ impl App {
             fs::copy(&self.backup_path, &self.path)
                 .expect("Error: Failed to load the backup data!");
         } else {
-            eprintln!("No backup found!");
+            eprintln!("{}", "No backup found!".red());
         }
     }
 }
