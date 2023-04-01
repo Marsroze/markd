@@ -4,6 +4,8 @@ use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
+use arboard::Clipboard;
+
 pub struct App {
     dirs: VecDeque<String>,
     path: String,
@@ -91,21 +93,20 @@ impl App {
         let file = File::create(&self.path)
             .expect("Error: Failed to open the file in create mode!");
 
+        lines
+            .remove(index - 1)
+            .expect("Error: Failed to remove the path at this index!");
+
         let mut writer = BufWriter::new(file);
 
-        let mut counter = 0;
         while let Some(line) = lines.pop_front() {
-            counter += 1;
-            if index == counter {
-                continue;
-            }
             writer
                 .write(line.as_bytes())
                 .expect("Error: Failed to write to file!");
         }
     }
 
-    pub fn check(&self) {
+    pub fn status(&self) {
         if self.dirs.len() == 0 {
             eprintln!("Nothing to check!");
             std::process::exit(1);
@@ -139,6 +140,19 @@ impl App {
             fs::remove_file(&self.path)
                 .expect("Error: Failed to clear the file!");
         }
+    }
+
+    pub fn clip(&self, index: usize) {
+        if index > self.dirs.len() || index == 0 {
+            eprintln!("Not valid index!");
+            std::process::exit(1);
+        }
+        let mut clipboard =
+            Clipboard::new().expect("Error: Failed to initialize clipboard!");
+        let data = self.dirs.get(index - 1).unwrap().trim();
+        clipboard
+            .set_text(data)
+            .expect("Error: Failed to set contents to the clipboard!");
     }
 
     pub fn list(&self) {

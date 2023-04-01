@@ -19,11 +19,15 @@ enum Commands {
     #[command(arg_required_else_help = true)]
     Unmark { index: Option<usize> },
 
-    /// Check the availability of marked directories
-    Check,
+    /// Shows status of marked directories
+    Status,
 
     /// Clears marked directory list
     Clear,
+
+    /// Copy path from the list to your sys clipboard
+    #[command(arg_required_else_help = true)]
+    Clip { index: Option<usize> },
 
     /// Display marked directory list
     List,
@@ -38,8 +42,9 @@ fn main() {
     match &cmd.command {
         Commands::Mark => app.mark(),
         Commands::Unmark { index } => app.unmark(index.unwrap()),
-        Commands::Check => app.check(),
+        Commands::Status => app.status(),
         Commands::Clear => app.clear(),
+        Commands::Clip { index } => app.clip(index.unwrap()),
         Commands::List => app.list(),
         Commands::Restore => app.restore(),
     }

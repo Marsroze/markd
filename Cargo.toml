@@ -12,4 +12,5 @@ name = "mkd"
 path = "src/main.rs"
 
 [dependencies]
+arboard = "3.2.0"
 clap = { version = "4.1.10", features = ["derive"] }
