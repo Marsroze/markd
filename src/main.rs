@@ -16,7 +16,6 @@ enum Commands {
     Mark,
 
     /// Unmark a directory
-    #[command(arg_required_else_help = true)]
     Unmark { index: Option<usize> },
 
     /// Shows status of marked directories
@@ -41,7 +40,7 @@ fn main() {
     let cmd = Cli::parse();
     match &cmd.command {
         Commands::Mark => app.mark(),
-        Commands::Unmark { index } => app.unmark(index.unwrap()),
+        Commands::Unmark { index } => app.unmark(index),
         Commands::Status => app.status(),
         Commands::Clear => app.clear(),
         Commands::Clip { index } => app.clip(index.unwrap()),
