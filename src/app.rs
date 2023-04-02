@@ -146,13 +146,13 @@ impl App {
                 format!(
                     "[{}] {}\n",
                     "✓".green(),
-                    path.display().to_string().green().underline()
+                    path.display().to_string().underline()
                 )
             } else {
                 format!(
                     "[{}] {}\n",
                     "✘".red(),
-                    path.display().to_string().red().dimmed().underline()
+                    path.display().to_string().dimmed().strikethrough()
                 )
             };
             writer
@@ -192,8 +192,7 @@ impl App {
         let mut writer = BufWriter::new(handle);
 
         for (index, line) in self.dirs.iter().enumerate() {
-            let data =
-                format!("[{}] {}", index + 1, line.underline().bright_yellow());
+            let data = format!("[{}] {}", index + 1, line.underline());
             writer
                 .write(data.as_bytes())
                 .expect("Error: Failed to print contents!");
