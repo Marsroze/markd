@@ -87,9 +87,25 @@ impl App {
             .expect("Error: Failed to write to the file!");
     }
 
-    pub fn unmark(&self, index: usize) {
+    pub fn unmark(&self, index: &Option<usize>) {
         let mut lines = self.dirs.clone();
-        if index > lines.len() || index == 0 {
+        let idx;
+        if index.is_none() {
+            let current = env::current_dir()
+                .expect("Error: Failed to get path of the current directory!");
+            let dirname = current.display().to_string();
+            idx = match lines
+                .iter()
+                .map(|line| line.trim().to_string())
+                .position(|path| path == dirname)
+            {
+                Some(x) => x + 1,
+                None => std::process::exit(1),
+            };
+        } else {
+            idx = index.unwrap();
+        }
+        if idx > lines.len() || idx == 0 {
             eprintln!("{}", "Not valid index!".red());
             std::process::exit(1);
         }
@@ -98,7 +114,7 @@ impl App {
             .expect("Error: Failed to open the file in create mode!");
 
         lines
-            .remove(index - 1)
+            .remove(idx - 1)
             .expect("Error: Failed to remove the path at this index!");
 
         let mut writer = BufWriter::new(file);
@@ -130,7 +146,7 @@ impl App {
                 format!(
                     "[{}] {}\n",
                     "✓".green(),
-                    path.display().to_string().bright_yellow().underline()
+                    path.display().to_string().green().underline()
                 )
             } else {
                 format!(
